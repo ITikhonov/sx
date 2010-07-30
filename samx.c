@@ -57,6 +57,11 @@ void pos(int x,int y) {
 void eraseline() { printf(CSI "K"); fflush(stdout); }
 void clear() { printf(CSI "J"); fflush(stdout); }
 
+void color(uint8_t *p) {
+	if(p>=texts && p<=textd) { printf("%s",CSI"7m"); }
+	else { printf("%s",CSI"m"); }
+}
+
 void drawtext() {
 	pos(1,1);
 	int r=0;
@@ -67,13 +72,15 @@ void drawtext() {
 		for(;p<texte;) {
 			if(*p=='\t') {c+=8;} else {c++;}
 			if(c>=win.ws_col) break;
-			if(*p=='\n') break;
-			if(p>=texts && p<=textd) {
-				printf("%s",CSI"7m");
+			if(*p=='\n') { color(p); putchar(' '); break; }
+
+			color(p);
+			if(*p=='\t') {
+				int t=c%8; if(!t)t=8;
+				while(t--) putchar(' '); p++;
 			} else {
-				printf("%s",CSI"m");
+				putchar(*p++);
 			}
-			putchar(*p++);
 		}
 		while(*p!='\n') {
 			p++;
@@ -93,25 +100,25 @@ end:
 char inputbuf[1024];
 char *input=inputbuf;
 
-void toline(int n) {
-	uint8_t *p=text;
-	while(p<texte) {
-		if(*p=='\n') n--;
-		if(n==0) { textd=p; p--; break; }
-		p++;
-	}
+uint8_t **atext;
 
-	texts=0;
-
-	n=win.ws_row/2;
+uint8_t *linesbackward(uint8_t *p, int n) {
+	n++;
 	while(p>text) {
-		if(*p=='\n') {if(!texts)texts=p; n--;}
-		if(n==0) break;
+		if(*p=='\n') n--;
+		if(n==0) { return p+1; }
 		p--;
 	}
-
-	textw=p;
 }
+
+uint8_t *linesforward(uint8_t *p, int n) {
+	while(p<texte) {
+		if(*p++=='\n') { n--;}
+		if(n==0) { return p; }
+	}
+}
+
+int dir=0;
 
 void number() {
 	int n=0;
@@ -119,9 +126,21 @@ void number() {
 		switch(*input) {
 		case '0'...'9': n*=10;n+=(*input++)-'0'; break;
 		default:
-			toline(n);
+			switch(dir) {
+			case 0: *atext=linesforward(text,n); break;
+			case -1: *atext=linesbackward(*atext,n); break;
+			case 1: *atext=linesforward(*atext,n); break;
+			}
 			return;
 		}
+	}
+}
+
+void cmd() {
+	switch(*input) {
+	case 'q': resetterm(); exit(0); break;
+	case 0: break;
+	default:input++;
 	}
 }
 
@@ -129,15 +148,26 @@ void interpret() {
 	*input=0;
 	input=inputbuf;
 
-	switch(*input) {
-	case 0: break;
-	case '0'...'9': {
-		number();
-	} break;
-	case 'q': resetterm(); exit(0);
-	default:;
-	}
+	atext=&texts;
+	dir=0;
 
+	for(;;) {
+		switch(*input) {
+		case 0:
+			textd=texts;
+			goto end;
+		case '0'...'9': {
+			number();
+		} break;
+		case '+':dir=1; input++; break;
+		case '-':dir=-1; input++; break;
+		case 'a'...'z':
+			cmd();
+			break;
+		default:;
+		}
+	}
+end:
 	input=inputbuf;
 }
 
@@ -153,6 +183,9 @@ int main(int argc, char *argv[]) {
 	char c;
 	for(;;) {
 		drawtext();
+		pos(win.ws_row-1,1);
+		printf("%lu(%02x):%lu",texts-text,*texts,textd-text); fflush(stdout);
+
 		pos(win.ws_row,1);
 		printf("%.*s",(int)(input-inputbuf),inputbuf); fflush(stdout);
 
