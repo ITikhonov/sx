@@ -60,7 +60,7 @@ void eraseline() { printf(CSI "K"); fflush(stdout); }
 void clear() { printf(CSI "J"); fflush(stdout); }
 
 void color(uint8_t *p) {
-	if(p>=texts && p<=textd) { printf("%s",CSI"7m"); }
+	if(p>=texts && p<textd) { printf("%s",CSI"7m"); }
 	else { printf("%s",CSI"m"); }
 }
 
@@ -129,7 +129,7 @@ struct range regexforward(uint8_t *s, char *p, char *pe) {
 		return ret;
 	}
 
-	struct range ret={texts+region->beg[0],texts+region->end[0]-1};
+	struct range ret={texts+region->beg[0],texts+region->end[0]};
 	sprintf(errbuf,"pat /%s/ %u:%u",p,region->beg[0],region->end[0]);
 	err=errbuf;
 	return ret;
@@ -163,18 +163,14 @@ uint8_t *linesbackward(uint8_t *p, int n) {
 		if(n==0) { return p+1; }
 		p--;
 	}
+	return text;
 }
 
 uint8_t *linesforward(uint8_t *p, int n) {
+	if(n==0) return p;
 	while(p<texte) {
 		if(*p++=='\n') { n--;}
 		if(n==0) { break; }
-	}
-
-	if(bindend) {
-		err="bindend!";
-		while(p<texte && *p!='\n') p++;
-		p--;
 	}
 	return p;
 }
@@ -187,9 +183,9 @@ void number() {
 		case '0'...'9': n*=10;n+=(*input++)-'0'; break;
 		default:
 			switch(dir) {
-		//	case 0: if(n) {*atext=linesforward(text,n);} else {*atext=text;} break;
-		//	case -1: *atext=linesbackward(*atext,n); break;
-		//	case 1: *atext=linesforward(*atext,n); break;
+			case 0: atext.s=linesforward(text,n); atext.e=linesforward(atext.s,1);  break;
+			case -1: atext.s=linesbackward(atext.s,n); atext.e=linesforward(atext.s,1); break;
+			case 1: atext.s=linesforward(atext.s,n); atext.e=linesforward(atext.s,1); break;
 			}
 			return;
 		}
@@ -231,7 +227,7 @@ void interpret() {
 			bindend=1;
 			input++;
 			break;
-		case '/': regex(); break;
+		case '/': regex(); dir=1; break;
 		case 0: case '=': case 'a'...'z':
 			if(!bindend) texts=atext.s;
 			textd=atext.e;
