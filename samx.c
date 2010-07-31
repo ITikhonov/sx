@@ -102,13 +102,14 @@ end:
 char inputbuf[1024];
 char *input=inputbuf;
 
-uint8_t **atext;
 int dir=0;
 int bindend=0;
 char *err="";
 char errbuf[1024];
 
 struct range { uint8_t *s,*e; };
+
+struct range atext;
 
 struct range regexforward(uint8_t *s, char *p, char *pe) {
 	regex_t* reg;
@@ -128,8 +129,9 @@ struct range regexforward(uint8_t *s, char *p, char *pe) {
 		return ret;
 	}
 
-	struct range ret={texts+region->beg[0],texts+region->end[0]};
-	sprintf(errbuf,"pat %u:%u",region->beg[0],region->end[0]);
+	struct range ret={texts+region->beg[0],texts+region->end[0]-1};
+	sprintf(errbuf,"pat /%s/ %u:%u",p,region->beg[0],region->end[0]);
+	err=errbuf;
 	return ret;
 }
 
@@ -149,8 +151,9 @@ void regex() {
 	}
 
 go:;
-	struct range r=regexforward(textd,pat,e);
-	textd=r.e;
+	struct range r=regexforward(atext.e,pat,e);
+	atext.s=r.s;
+	atext.e=r.e;
 }
 
 uint8_t *linesbackward(uint8_t *p, int n) {
@@ -184,9 +187,9 @@ void number() {
 		case '0'...'9': n*=10;n+=(*input++)-'0'; break;
 		default:
 			switch(dir) {
-			case 0: if(n) {*atext=linesforward(text,n);} else {*atext=text;} break;
-			case -1: *atext=linesbackward(*atext,n); break;
-			case 1: *atext=linesforward(*atext,n); break;
+		//	case 0: if(n) {*atext=linesforward(text,n);} else {*atext=text;} break;
+		//	case -1: *atext=linesbackward(*atext,n); break;
+		//	case 1: *atext=linesforward(*atext,n); break;
 			}
 			return;
 		}
@@ -208,27 +211,32 @@ void interpret() {
 	input=inputbuf;
 	err="";
 
-	atext=&texts;
+	atext.s=texts;
+	atext.e=textd;
+
 	dir=0;
 	bindend=0;
 
 	for(;;) {
 		switch(*input) {
-		case 0: if(textd<texts) { textd=texts; }
-			goto end;
 		case '0'...'9': {
 			number();
 		} break;
 		case '+':dir=1; input++; break;
 		case '-':dir=-1; input++; break;
 		case ',':
-			atext=&textd;
-			textd=texts;
+			texts=atext.s;
+			textd=atext.e;
 			dir=0;
 			bindend=1;
+			input++;
+			break;
 		case '/': regex(); break;
-		case '=': case 'a'...'z':
+		case 0: case '=': case 'a'...'z':
+			if(!bindend) texts=atext.s;
+			textd=atext.e;
 			cmd();
+			if(!*input) goto end;
 			break;
 		default:
 			err="! unknown command";
