@@ -10,6 +10,8 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
+#include <oniguruma.h>
+
 
 struct termios oldkey;
 
@@ -104,6 +106,52 @@ uint8_t **atext;
 int dir=0;
 int bindend=0;
 char *err="";
+char errbuf[1024];
+
+struct range { uint8_t *s,*e; };
+
+struct range regexforward(uint8_t *s, char *p, char *pe) {
+	regex_t* reg;
+	int r=onig_new(&reg,p,pe,ONIG_OPTION_DEFAULT,ONIG_ENCODING_ASCII,ONIG_SYNTAX_DEFAULT,0);
+	if (r!=ONIG_NORMAL) {
+		err="bogus search";
+		struct range ret={s,s};
+		return ret;
+	}
+
+	OnigRegion* region=onig_region_new();
+
+	r=onig_search(reg,texts,texte,s,texte,region,ONIG_OPTION_NONE);
+	if(region->num_regs<1) {
+		err="not found";
+		struct range ret={s,s};
+		return ret;
+	}
+
+	struct range ret={texts+region->beg[0],texts+region->end[0]};
+	sprintf(errbuf,"pat %u:%u",region->beg[0],region->end[0]);
+	return ret;
+}
+
+void regex() {
+	input++;
+	uint8_t *pat=input, *e=input;
+	int esc=0;
+	
+	for(;;) {
+		switch(*e) {
+		case 0: goto go;
+		case '/': input=e+1; if(!esc) goto go; esc=0; break;
+		case '\\': esc=1; break;
+		default: esc=0;
+		}
+		e++;
+	}
+
+go:;
+	struct range r=regexforward(textd,pat,e);
+	textd=r.e;
+}
 
 uint8_t *linesbackward(uint8_t *p, int n) {
 	n++;
@@ -178,6 +226,7 @@ void interpret() {
 			textd=texts;
 			dir=0;
 			bindend=1;
+		case '/': regex(); break;
 		case '=': case 'a'...'z':
 			cmd();
 			break;
@@ -189,7 +238,6 @@ void interpret() {
 end:
 	input=inputbuf;
 }
-
 
 int main(int argc, char *argv[]) {
 	ioctl(1,TIOCGWINSZ,&win);
@@ -210,6 +258,8 @@ int main(int argc, char *argv[]) {
 
 		int r=read(0,&c,1);
 		if(c=='\r') { interpret(); continue; }
+		if(c=='\x7f') { if(input>inputbuf) input--; continue; }
+
 		*input++=c;
 	}
 
