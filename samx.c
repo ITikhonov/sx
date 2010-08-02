@@ -111,7 +111,7 @@ struct range { uint8_t *s,*e; };
 
 struct range atext;
 
-struct range regexforward(uint8_t *s, char *p, char *pe) {
+struct range regexsearch(uint8_t *s, uint8_t *e, char *p, char *pe) {
 	regex_t* reg;
 	int r=onig_new(&reg,p,pe,ONIG_OPTION_DEFAULT,ONIG_ENCODING_ASCII,ONIG_SYNTAX_DEFAULT,0);
 	if (r!=ONIG_NORMAL) {
@@ -122,8 +122,8 @@ struct range regexforward(uint8_t *s, char *p, char *pe) {
 
 	OnigRegion* region=onig_region_new();
 
-	r=onig_search(reg,texts,texte,s,texte,region,ONIG_OPTION_NONE);
-	if(r<0) {
+	r=onig_search(reg,texts,texte,s,e,region,ONIG_OPTION_NONE);
+	if(r==-1) {
 		sprintf(errbuf,"pat /%.*s/ not found",(int)(pe-p),p);
 		err=errbuf;
 		struct range ret={s,s};
@@ -152,7 +152,12 @@ void regex() {
 	}
 
 go:;
-	struct range r=regexforward(atext.e,pat,e);
+	struct range r;
+	if(dir>=0) {
+		r=regexsearch(atext.e,texte,pat,e);
+	} else {
+		r=regexsearch(atext.s,text,pat,e);
+	}
 	atext.s=r.s;
 	atext.e=r.e;
 }
