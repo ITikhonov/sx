@@ -123,8 +123,9 @@ struct range regexforward(uint8_t *s, char *p, char *pe) {
 	OnigRegion* region=onig_region_new();
 
 	r=onig_search(reg,texts,texte,s,texte,region,ONIG_OPTION_NONE);
-	if(region->num_regs<1) {
-		err="not found";
+	if(r<0) {
+		sprintf(errbuf,"pat /%.*s/ not found",(int)(pe-p),p);
+		err=errbuf;
 		struct range ret={s,s};
 		return ret;
 	}
@@ -183,7 +184,8 @@ void number() {
 		case '0'...'9': n*=10;n+=(*input++)-'0'; break;
 		default:
 			switch(dir) {
-			case 0: atext.s=linesforward(text,n); atext.e=linesforward(atext.s,1);  break;
+			case 0: if(n==0) {atext.s=atext.e=text; break;}
+				atext.s=linesforward(text,n-1); atext.e=linesforward(atext.s,1);  break;
 			case -1: atext.s=linesbackward(atext.s,n); atext.e=linesforward(atext.s,1); break;
 			case 1: atext.s=linesforward(atext.s,n); atext.e=linesforward(atext.s,1); break;
 			}
@@ -192,10 +194,12 @@ void number() {
 	}
 }
 
+int show;
+
 void cmd() {
 	switch(*input) {
 	case 'q': resetterm(); exit(0); break;
-	case '=': textw=linesbackward(texts,win.ws_row/2); input++; break;
+	case '=': show=0; input++; break;
 	case 0: break;
 	default:input++;
 	}
@@ -203,6 +207,7 @@ void cmd() {
 
 
 void interpret() {
+	show=1;
 	*input=0;
 	input=inputbuf;
 	err="";
@@ -240,6 +245,7 @@ void interpret() {
 		}
 	}
 end:
+	if(show) { textw=linesbackward(texts,win.ws_row/2); }
 	input=inputbuf;
 }
 
