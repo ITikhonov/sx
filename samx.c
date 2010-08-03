@@ -123,15 +123,15 @@ struct range regexsearch(uint8_t *s, uint8_t *e, char *p, char *pe) {
 	OnigRegion* region=onig_region_new();
 
 	r=onig_search(reg,texts,texte,s,e,region,ONIG_OPTION_NONE);
-	if(r==-1) {
-		sprintf(errbuf,"pat /%.*s/ not found",(int)(pe-p),p);
+	if(region->beg[0]==-1) {
+		sprintf(errbuf,"pat /%.*s/ not found (%d,%d)",(int)(pe-p),p,(int)(s-text),(int)(e-text));
 		err=errbuf;
 		struct range ret={s,s};
 		return ret;
 	}
 
 	struct range ret={texts+region->beg[0],texts+region->end[0]};
-	sprintf(errbuf,"pat /%s/ %u:%u",p,region->beg[0],region->end[0]);
+	sprintf(errbuf,"pat /%s/ %d:%d n=%d r=%d",p,region->beg[0],region->end[0],region->num_regs,r);
 	err=errbuf;
 	return ret;
 }
