@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <errno.h>
 
 #define __USE_GNU
 
@@ -54,7 +55,6 @@ struct winsize win;
 #define CSI "\x1b["
 
 void pos(int x,int y) {
-	char buf[15];
 	printf(CSI "%u;%uf",x,y); fflush(stdout);
 }
 
@@ -101,8 +101,8 @@ end:
 	fflush(stdout);
 }
 
-char inputbuf[1024];
-char *input=inputbuf;
+uint8_t inputbuf[1024];
+uint8_t *input=inputbuf;
 
 int dir=0;
 int bindend=0;
@@ -113,12 +113,12 @@ struct range { uint8_t *s,*e; };
 
 struct range atext;
 
-struct range regexsearch(uint8_t *s, uint8_t *e, char *p, char *pe) {
+struct range regexsearch(uint8_t *s, uint8_t *e, uint8_t *p, uint8_t *pe) {
 	struct re_pattern_buffer reg;
 	memset(&reg,0,sizeof(reg));
 
 	const char *errl;
-	if((errl=re_compile_pattern(p,pe-p, &reg))) {
+	if((errl=re_compile_pattern((char*)p,pe-p, &reg))) {
 		err=errl;
 		struct range ret={s,s};
 		return ret;
@@ -275,6 +275,12 @@ int main(int argc, char *argv[]) {
 		printf("%.*s",(int)(input-inputbuf),inputbuf); fflush(stdout);
 
 		int r=read(0,&c,1);
+		if(r==-1) {
+			if(errno==EAGAIN || errno==EINTR) continue;
+			break;
+		}
+		if(r==0) break;
+
 		if(c=='\r') { interpret(); continue; }
 		if(c=='\x7f') { if(input>inputbuf) input--; continue; }
 
@@ -283,5 +289,6 @@ int main(int argc, char *argv[]) {
 
 
 	resetterm();
+	return 0;
 }
 
