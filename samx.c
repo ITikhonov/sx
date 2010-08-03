@@ -10,7 +10,9 @@
 #include <string.h>
 #include <sys/ioctl.h>
 
-#include <oniguruma.h>
+#define __USE_GNU
+
+#include <regex.h>
 
 
 struct termios oldkey;
@@ -104,7 +106,7 @@ char *input=inputbuf;
 
 int dir=0;
 int bindend=0;
-char *err="";
+const char *err="";
 char errbuf[1024];
 
 struct range { uint8_t *s,*e; };
@@ -112,26 +114,27 @@ struct range { uint8_t *s,*e; };
 struct range atext;
 
 struct range regexsearch(uint8_t *s, uint8_t *e, char *p, char *pe) {
-	regex_t* reg;
-	int r=onig_new(&reg,p,pe,ONIG_OPTION_DEFAULT,ONIG_ENCODING_ASCII,ONIG_SYNTAX_DEFAULT,0);
-	if (r!=ONIG_NORMAL) {
-		err="bogus search";
+	struct re_pattern_buffer reg;
+	memset(&reg,0,sizeof(reg));
+
+	const char *errl;
+	if((errl=re_compile_pattern(p,pe-p, &reg))) {
+		err=errl;
 		struct range ret={s,s};
 		return ret;
 	}
 
-	OnigRegion* region=onig_region_new();
-
-	r=onig_search(reg,texts,texte,s,e,region,ONIG_OPTION_NONE);
-	if(region->beg[0]==-1) {
+	struct re_registers mreg;
+	int r=re_search(&reg, (char*)text,texte-text, s-text,e-s, &mreg);
+	if(r==-1) {
 		sprintf(errbuf,"pat /%.*s/ not found (%d,%d)",(int)(pe-p),p,(int)(s-text),(int)(e-text));
 		err=errbuf;
 		struct range ret={s,s};
 		return ret;
 	}
 
-	struct range ret={texts+region->beg[0],texts+region->end[0]};
-	sprintf(errbuf,"pat /%s/ %d:%d n=%d r=%d",p,region->beg[0],region->end[0],region->num_regs,r);
+	struct range ret={text+mreg.start[0],text+mreg.end[0]};
+	sprintf(errbuf,"pat /%s/ %d:%d n=%d r=%d",p,mreg.start[0],mreg.end[0],mreg.num_regs,r);
 	err=errbuf;
 	return ret;
 }

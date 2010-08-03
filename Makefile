@@ -1,4 +1,3 @@
-CFLAGS=-g
-LDLIBS=-lonig
+CFLAGS=-g -Wall
 
 all: samx
