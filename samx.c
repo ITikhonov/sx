@@ -42,11 +42,13 @@ uint8_t *texte;
 uint8_t *texts;
 uint8_t *textd;
 
+int filefd;
+
 void openfile() {
-	int fd=open("sample.txt",O_RDWR);
+	filefd=open("sample.txt",O_RDWR);
 	struct stat st;
-	fstat(fd,&st);
-	texts=textd=textw=text=mmap(0,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,fd,0);
+	fstat(filefd,&st);
+	texts=textd=textw=text=mmap(0,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,filefd,0);
 	texte=text+st.st_size;
 }
 
@@ -219,12 +221,65 @@ void cnumber() {
 	}
 }
 
+void insert() {
+	input++;
+	munmap(text,texte-text);
+	char buf[1024];
+	int len=strlen((char*)input);
+
+	int fd=open(".samx~",O_WRONLY|O_CREAT,0644);
+	int off=0;
+	int at=textd-text;
+
+	for(;off+1024<at;) {
+		int r=read(filefd,buf,1024);
+		if(r<=0) break;
+		write(fd,buf,r);
+		off+=r;
+	}
+
+	int r=read(filefd,buf,at-off);
+	write(fd,buf,r);
+	write(fd,input,len);
+
+	for(;;) {
+		int r=read(filefd,buf,1024);
+		if(r<=0) break;
+		write(fd,buf,r);
+	}
+
+	close(fd);
+
+	rename(".samx~","sample.txt");
+
+
+	uint8_t *otext=text;
+	uint8_t *otextw=textw;
+	uint8_t *otexte=texte;
+
+	uint8_t *otexts=texts;
+	uint8_t *otextd=textd;
+
+	openfile();
+	input+=len;
+
+	textw=text+(otextw-otext);
+	texte=text+(otexte-otext);
+	texts=text+(otexts-otext);
+	textd=text+(otextd-otext)+len;
+}
+
 int show;
+int textmode=0;
 
 void cmd() {
+	if(!bindend) texts=atext.s;
+	textd=atext.e;
+
 	switch(*input) {
 	case 'q': resetterm(); exit(0); break;
 	case '=': show=0; input++; break;
+	case 'i': textmode=1; insert(); break;
 	case 0: break;
 	default:input++;
 	}
@@ -258,8 +313,6 @@ void interpret() {
 			break;
 		case '/': regex(); dir=1; break;
 		case 0: case '=': case 'a'...'z':
-			if(!bindend) texts=atext.s;
-			textd=atext.e;
 			cmd();
 			if(!*input) goto end;
 			break;
@@ -276,7 +329,7 @@ end:
 int main(int argc, char *argv[]) {
 	ioctl(1,TIOCGWINSZ,&win);
 
-	openfile(argv[1]);
+	openfile();
 	initterm();
 
 	pos(1,1); clear();
@@ -297,8 +350,8 @@ int main(int argc, char *argv[]) {
 		}
 		if(r==0) break;
 
-		if(c=='\r') { interpret(); continue; }
 		if(c=='\x7f') { if(input>inputbuf) input--; continue; }
+		if(c=='\r') { interpret(); continue; }
 
 		*input++=c;
 	}

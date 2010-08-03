@@ -2,4 +2,6 @@ v input
 v draw
 v addressation
 v regex
-- backward regex
+v backward regex
+v insert
+- delete
