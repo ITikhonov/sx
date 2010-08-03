@@ -134,7 +134,7 @@ struct range regexsearch(uint8_t *s, uint8_t *e, uint8_t *p, uint8_t *pe) {
 	}
 
 	struct range ret={text+mreg.start[0],text+mreg.end[0]};
-	sprintf(errbuf,"pat /%s/ %d:%d n=%d r=%d",p,mreg.start[0],mreg.end[0],mreg.num_regs,r);
+	sprintf(errbuf,"pat /%.*s/ %d:%d n=%d r=%d",(int)(pe-p),p,mreg.start[0],mreg.end[0],mreg.num_regs,r);
 	err=errbuf;
 	return ret;
 }
@@ -202,6 +202,23 @@ void number() {
 	}
 }
 
+void cnumber() {
+	int n=0;
+	input++;
+	for(;;) {
+		switch(*input) {
+		case '0'...'9': n*=10;n+=(*input++)-'0'; break;
+		default:
+			switch(dir) {
+			case 0: atext.s=atext.e=text+n; break;
+			case -1: atext.s=atext.e=atext.s-n; break;
+			case 1: atext.s=atext.e=atext.e+n; break;
+			}
+			return;
+		}
+	}
+}
+
 int show;
 
 void cmd() {
@@ -228,9 +245,8 @@ void interpret() {
 
 	for(;;) {
 		switch(*input) {
-		case '0'...'9': {
-			number();
-		} break;
+		case '0'...'9': number(); break;
+		case '#': cnumber(); break;
 		case '+':dir=1; input++; break;
 		case '-':dir=-1; input++; break;
 		case ',':
