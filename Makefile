@@ -1,3 +1,3 @@
 CFLAGS=-g -Wall -Werror
 
-all: samx
+all: sx

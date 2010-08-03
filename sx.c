@@ -227,7 +227,7 @@ void insert() {
 	char buf[1024];
 	int len=strlen((char*)input);
 
-	int fd=open(".samx~",O_WRONLY|O_CREAT,0644);
+	int fd=open(".sx~",O_WRONLY|O_CREAT,0644);
 	int off=0;
 	int at=textd-text;
 
@@ -250,7 +250,7 @@ void insert() {
 
 	close(fd);
 
-	rename(".samx~","sample.txt");
+	rename(".sx~","sample.txt");
 
 
 	uint8_t *otext=text;
