@@ -9,4 +9,6 @@ v continious append
 v addressing before comma moves head only
 v edit file from command line
 v save command
-- prompt on unsaved exit
+v prompt on unsaved exit
+- visual range borders
+- split when not fit on screen

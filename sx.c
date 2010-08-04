@@ -46,6 +46,7 @@ int filefd;
 
 char *name;
 char swapname[256];
+int changed=0;
 
 void makeswap(char *f) {
 	char *sp=rindex(f,'/');
@@ -175,8 +176,8 @@ void regex() {
 	
 	for(;;) {
 		switch(*e) {
-		case 0: goto go;
-		case '/': input=e+1; if(!esc) goto go; esc=0; break;
+		case 0: input=e; goto go;
+		case '/': if(!esc) { input=e+1; goto go; } esc=0; break;
 		case '\\': esc=1; break;
 		default: esc=0;
 		}
@@ -270,6 +271,7 @@ int precopy(int at) {
 }
 
 void postcopy(int fd, int at) {
+	changed=1;
 	lseek(filefd,at,SEEK_SET);
 	char buf[1024];
 	for(;;) {
@@ -336,10 +338,19 @@ void save() {
 	close(orig);
 	close(swap);
 	rename(swapname2,name);
+	changed=0;
 }
 
-void cleanswap() {
-	unlink(swapname);
+
+void quit() {
+	if(!changed) {
+		resetterm();
+		unlink(swapname);
+		exit(0);
+	}
+
+	err="not saved, use Q or save first";
+	input++;
 }
 
 int show;
@@ -349,7 +360,8 @@ void cmd() {
 	textd=atext.e;
 
 	switch(*input) {
-	case 'q': resetterm(); cleanswap(); exit(0); break;
+	case 'q': quit(); break;
+	case 'Q': changed=0; quit(); break;
 	case '=': show=0; input++; break;
 	case 'a': append(); break;
 	case 'A': nlappend(); break;
@@ -394,7 +406,7 @@ void interpret() {
 			input++;
 			break;
 		case '/': regex(); dir=1; break;
-		case 0: case '=': case 'a'...'z': case 'A':
+		case 0: case '=': case 'a'...'z': case 'A': case 'Q':
 			cmd();
 			if(!*input) goto end;
 			break;
