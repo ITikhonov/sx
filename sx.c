@@ -207,14 +207,15 @@ void number() {
 void cnumber() {
 	int n=0;
 	input++;
+	uint8_t **a=bindend?&atext.e:&atext.s;
 	for(;;) {
 		switch(*input) {
 		case '0'...'9': n*=10;n+=(*input++)-'0'; break;
 		default:
 			switch(dir) {
-			case 0: atext.s=atext.e=text+n; break;
-			case -1: atext.s=atext.e=atext.s-n; break;
-			case 1: atext.s=atext.e=atext.e+n; break;
+			case 0: *a=text+n; break;
+			case -1: *a-=n; break;
+			case 1: *a+=n; break;
 			}
 			return;
 		}
@@ -330,7 +331,6 @@ void interpret() {
 		case '-':dir=-1; input++; break;
 		case ',':
 			texts=atext.s;
-			textd=atext.e;
 			dir=0;
 			bindend=1;
 			input++;
