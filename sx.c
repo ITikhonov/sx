@@ -222,6 +222,8 @@ void cnumber() {
 }
 
 int precopy(int at) {
+	munmap(text,texte-text);
+
 	char buf[1024];
 	int fd=open(".sx~",O_WRONLY|O_CREAT,0644);
 	int off=0;
@@ -260,11 +262,14 @@ void postcopy(int fd, int at) {
 }
 
 void delete() {
+	input++;
+	int fd=precopy(texts-text);
+	postcopy(fd,textd-text);
+	textd=texts;
 }
 
 void insert() {
 	input++;
-	munmap(text,texte-text);
 	int len=strlen((char*)input);
 
 	int fd=precopy(textd-text);
