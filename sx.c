@@ -281,6 +281,11 @@ void append() {
 	input+=len;
 }
 
+void nlappend() {
+	*input--='\n';
+	append();
+}
+
 int show;
 
 void cmd() {
@@ -291,6 +296,7 @@ void cmd() {
 	case 'q': resetterm(); exit(0); break;
 	case '=': show=0; input++; break;
 	case 'a': append(); break;
+	case 'A': nlappend(); break;
 	case 'd': delete(); break;
 	case 0: break;
 	default:input++;
@@ -303,6 +309,12 @@ void interpret() {
 	*input=0;
 	input=inputbuf;
 	err="";
+
+	if(input[0]=='\0') {
+		inputbuf[0]='A';
+		input=inputbuf+1;
+		return;
+	}
 
 	atext.s=texts;
 	atext.e=textd;
@@ -324,7 +336,7 @@ void interpret() {
 			input++;
 			break;
 		case '/': regex(); dir=1; break;
-		case 0: case '=': case 'a'...'z':
+		case 0: case '=': case 'a'...'z': case 'A':
 			cmd();
 			if(!*input) goto end;
 			break;
