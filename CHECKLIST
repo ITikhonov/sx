@@ -5,3 +5,4 @@ v regex
 v backward regex
 v insert
 - delete
+- continious insert

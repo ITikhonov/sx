@@ -221,56 +221,61 @@ void cnumber() {
 	}
 }
 
-void insert() {
-	input++;
-	munmap(text,texte-text);
+int precopy(int at) {
 	char buf[1024];
-	int len=strlen((char*)input);
-
 	int fd=open(".sx~",O_WRONLY|O_CREAT,0644);
 	int off=0;
-	int at=textd-text;
-
+	
 	for(;off+1024<at;) {
 		int r=read(filefd,buf,1024);
 		if(r<=0) break;
 		write(fd,buf,r);
 		off+=r;
 	}
-
 	int r=read(filefd,buf,at-off);
 	write(fd,buf,r);
-	write(fd,input,len);
+	return fd;
+}
 
+void postcopy(int fd, int at) {
+	lseek(filefd,at,SEEK_SET);
+	char buf[1024];
 	for(;;) {
 		int r=read(filefd,buf,1024);
 		if(r<=0) break;
 		write(fd,buf,r);
 	}
-
 	close(fd);
-
 	rename(".sx~","sample.txt");
-
-
 	uint8_t *otext=text;
 	uint8_t *otextw=textw;
 	uint8_t *otexte=texte;
-
 	uint8_t *otexts=texts;
 	uint8_t *otextd=textd;
-
 	openfile();
-	input+=len;
-
 	textw=text+(otextw-otext);
 	texte=text+(otexte-otext);
 	texts=text+(otexts-otext);
-	textd=text+(otextd-otext)+len;
+	textd=text+(otextd-otext);
+}
+
+void delete() {
+}
+
+void insert() {
+	input++;
+	munmap(text,texte-text);
+	int len=strlen((char*)input);
+
+	int fd=precopy(textd-text);
+	write(fd,input,len);
+	postcopy(fd,textd-text);
+
+	textd+=len;
+	input+=len;
 }
 
 int show;
-int textmode=0;
 
 void cmd() {
 	if(!bindend) texts=atext.s;
@@ -279,7 +284,8 @@ void cmd() {
 	switch(*input) {
 	case 'q': resetterm(); exit(0); break;
 	case '=': show=0; input++; break;
-	case 'i': textmode=1; insert(); break;
+	case 'i': insert(); break;
+	case 'd': delete(); break;
 	case 0: break;
 	default:input++;
 	}
