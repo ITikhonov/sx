@@ -383,6 +383,7 @@ void interpret() {
 
 	for(;;) {
 		switch(*input) {
+		case '$':atext.s=atext.e=texte; input++; break;
 		case '0'...'9': number(); break;
 		case '#': cnumber(); break;
 		case '+':dir=1; input++; break;
