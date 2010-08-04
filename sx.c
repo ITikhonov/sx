@@ -268,7 +268,7 @@ void delete() {
 	textd=texts;
 }
 
-void insert() {
+void append() {
 	input++;
 	int len=strlen((char*)input);
 
@@ -276,6 +276,7 @@ void insert() {
 	write(fd,input,len);
 	postcopy(fd,textd-text);
 
+	texts=textd;
 	textd+=len;
 	input+=len;
 }
@@ -289,7 +290,7 @@ void cmd() {
 	switch(*input) {
 	case 'q': resetterm(); exit(0); break;
 	case '=': show=0; input++; break;
-	case 'i': insert(); break;
+	case 'a': append(); break;
 	case 'd': delete(); break;
 	case 0: break;
 	default:input++;
