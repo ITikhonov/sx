@@ -286,12 +286,10 @@ void postcopy(int fd, int at) {
 	rename(swapname2,swapname);
 	uint8_t *otext=text;
 	uint8_t *otextw=textw;
-	uint8_t *otexte=texte;
 	uint8_t *otexts=texts;
 	uint8_t *otextd=textd;
 	openfile();
 	textw=text+(otextw-otext);
-	texte=text+(otexte-otext);
 	texts=text+(otexts-otext);
 	textd=text+(otextd-otext);
 }
