@@ -62,7 +62,6 @@ void makeswap(char *f) {
 	int swap=open(swapname,O_WRONLY|O_CREAT,0644);
 	int orig=open(name,O_RDONLY);
 	char buf[1024];
-
 	int r;
 	while((r=read(orig,buf,1024))>0) {
 		write(swap,buf,r);
@@ -321,6 +320,25 @@ void nlappend() {
 	append();
 }
 
+void save() {
+	input++;
+	
+	char swapname2[256];
+	strcpy(swapname2,swapname);
+	swapname2[1]='~';
+
+	int swap=open(swapname,O_RDONLY,0644);
+	int orig=open(swapname2,O_WRONLY|O_CREAT);
+	char buf[1024];
+	int r;
+	while((r=read(swap,buf,1024))>0) {
+		write(orig,buf,r);
+	}
+	close(orig);
+	close(swap);
+	rename(swapname2,name);
+}
+
 int show;
 
 void cmd() {
@@ -333,6 +351,7 @@ void cmd() {
 	case 'a': append(); break;
 	case 'A': nlappend(); break;
 	case 'd': delete(); break;
+	case 'w': save(); break;
 	case 0: break;
 	default:input++;
 	}
