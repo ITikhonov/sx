@@ -6,4 +6,6 @@ v backward regex
 v insert
 v delete
 v continious append
-- addressing before comma moves head only
+v addressing before comma moves head only
+- edit file from command line
+- save command

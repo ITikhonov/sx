@@ -44,8 +44,35 @@ uint8_t *textd;
 
 int filefd;
 
+char *name;
+char swapname[256];
+
+void makeswap(char *f) {
+	char *sp=rindex(f,'/');
+	if(sp) {
+		sp[0]=0;
+		chdir(f);
+		name=sp+1;
+	} else {
+		name=f;
+	}
+
+	sprintf(swapname,".sx.%.251s",name);
+
+	int swap=open(swapname,O_WRONLY|O_CREAT,0644);
+	int orig=open(name,O_RDONLY);
+	char buf[1024];
+
+	int r;
+	while((r=read(orig,buf,1024))>0) {
+		write(swap,buf,r);
+	}
+	close(orig);
+	close(swap);
+}
+
 void openfile() {
-	filefd=open("sample.txt",O_RDWR);
+	filefd=open(swapname,O_RDWR);
 	struct stat st;
 	fstat(filefd,&st);
 	texts=textd=textw=text=mmap(0,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,filefd,0);
@@ -226,7 +253,9 @@ int precopy(int at) {
 	munmap(text,texte-text);
 
 	char buf[1024];
-	int fd=open(".sx~",O_WRONLY|O_CREAT,0644);
+	swapname[1]='~';
+	int fd=open(swapname,O_WRONLY|O_CREAT,0644);
+	swapname[1]='s';
 	int off=0;
 	
 	for(;off+1024<at;) {
@@ -249,7 +278,12 @@ void postcopy(int fd, int at) {
 		write(fd,buf,r);
 	}
 	close(fd);
-	rename(".sx~","sample.txt");
+
+	char swapname2[256];
+	strcpy(swapname2,swapname);
+	swapname2[1]='~';
+
+	rename(swapname2,swapname);
 	uint8_t *otext=text;
 	uint8_t *otextw=textw;
 	uint8_t *otexte=texte;
@@ -353,6 +387,7 @@ end:
 int main(int argc, char *argv[]) {
 	ioctl(1,TIOCGWINSZ,&win);
 
+	makeswap(argv[1]);
 	openfile();
 	initterm();
 
