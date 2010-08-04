@@ -7,5 +7,6 @@ v insert
 v delete
 v continious append
 v addressing before comma moves head only
-- edit file from command line
-- save command
+v edit file from command line
+v save command
+- prompt on unsaved exit

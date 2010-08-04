@@ -114,6 +114,7 @@ void drawtext() {
 				putchar(*p++);
 			}
 		}
+		if(p==texte) goto end;
 		while(*p!='\n') {
 			p++;
 			if(p==texte) goto end;
@@ -339,6 +340,10 @@ void save() {
 	rename(swapname2,name);
 }
 
+void cleanswap() {
+	unlink(swapname);
+}
+
 int show;
 
 void cmd() {
@@ -346,7 +351,7 @@ void cmd() {
 	textd=atext.e;
 
 	switch(*input) {
-	case 'q': resetterm(); exit(0); break;
+	case 'q': resetterm(); cleanswap(); exit(0); break;
 	case '=': show=0; input++; break;
 	case 'a': append(); break;
 	case 'A': nlappend(); break;
@@ -382,6 +387,7 @@ void interpret() {
 		case '#': cnumber(); break;
 		case '+':dir=1; input++; break;
 		case '-':dir=-1; input++; break;
+		case '.': atext.e=atext.s; input++; break;
 		case ',':
 			texts=atext.s;
 			dir=0;
