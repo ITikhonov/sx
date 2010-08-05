@@ -320,6 +320,27 @@ void delete() {
 	textd=texts;
 }
 
+
+void paste() {
+	input++;
+	int fd=precopy(textd-text);
+
+	swapname[1]='y';
+	int y=open(swapname,O_RDONLY);
+	swapname[1]='s';
+	int t=0;
+	for(;;) {
+		char buf[1024];
+		int r=read(y,buf,1024);
+		if(r<=0) break;
+		t+=r;
+		write(fd,buf,r);
+	}
+	postcopy(fd,textd-text);
+	texts=textd;
+	textd=texts+t;
+}
+
 void append() {
 	input++;
 	int len=strlen((char*)input);
@@ -358,10 +379,6 @@ void save() {
 	changed=0;
 }
 
-
-void paste() {
-
-}
 
 void quit() {
 	if(!changed) {
