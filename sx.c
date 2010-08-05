@@ -104,8 +104,14 @@ void drawtext() {
 		int c=0;
 		for(;p<texte;) {
 			if(*p=='\t') {c+=8;} else {c++;}
+
+			if(p==texts) { printf("%s>",CSI"1m"); c++; }
 			if(c>=win.ws_col) break;
-			if(*p=='\n') { if(c==1) { color(p); putchar(' '); } break; }
+
+			if(p==textd) { printf("%s<",CSI"m"CSI"1m"); c++; }
+			if(c>=win.ws_col) break;
+
+			if(*p=='\n') { break; }
 
 			color(p);
 			if(*p=='\t') {
