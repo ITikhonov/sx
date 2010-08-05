@@ -165,12 +165,10 @@ struct range regexsearch(uint8_t *s, uint8_t *e, uint8_t *p, uint8_t *pe) {
 		reg=regp;
 	}
 
-
-
 	struct re_registers mreg;
 	int r=re_search(&reg, (char*)text,texte-text, s-text,e-s, &mreg);
 	if(r==-1) {
-		sprintf(errbuf,"pat /%.*s/ not found (%d,%d)",(int)(pe-p),p,(int)(s-text),(int)(e-text));
+		sprintf(errbuf,"pat /%.*s/ not found (%d,%d,%d)",(int)(pe-p),p,(int)(s-text),(int)(e-text),dir);
 		err=errbuf;
 		struct range ret={s,s};
 		return ret;
@@ -451,7 +449,7 @@ void interpret() {
 			bindend=1;
 			input++;
 			break;
-		case '/': regex(); dir=1; break;
+		case '/': regex(); break;
 		case 0: case '=': case 'a'...'z': case 'A': case 'Q':
 			cmd();
 			atext.s=texts; atext.e=textd;
