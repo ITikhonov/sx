@@ -304,6 +304,17 @@ void postcopy(int fd, int at) {
 
 void delete() {
 	input++;
+	swapname[1]='y';
+	int y=open(swapname,O_CREAT|O_TRUNC|O_WRONLY,0600);
+	swapname[1]='s';
+	uint8_t *p=texts;
+	while(p+1024<textd) {
+		write(y,p,1024); p+=1024;
+	}
+
+	write(y,p,textd-p);
+	close(y);
+
 	int fd=precopy(texts-text);
 	postcopy(fd,textd-text);
 	textd=texts;
@@ -414,6 +425,7 @@ void interpret() {
 		case '/': regex(); dir=1; break;
 		case 0: case '=': case 'a'...'z': case 'A': case 'Q':
 			cmd();
+			atext.s=texts; atext.e=textd;
 			if(!*input) goto end;
 			break;
 		default:

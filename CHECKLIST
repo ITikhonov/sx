@@ -11,5 +11,6 @@ v edit file from command line
 v save command
 v prompt on unsaved exit
 v visual range borders
-- wrap line
+v wrap line
+- paste
 - split when not fit on screen
