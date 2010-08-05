@@ -106,7 +106,7 @@ void drawtext() {
 			if(*p=='\t') {c+=8;} else {c++;}
 
 			if(p==texts) { printf("%s>",CSI"1m"); c++; }
-			if(c>=win.ws_col) break;
+			if(c>=win.ws_col-3) { printf("%s...\r\n...",CSI"1m"); eraseline(); c=0; r++; continue; }
 
 			if(p==textd) { printf("%s<",CSI"m"CSI"1m"); c++; }
 			if(c>=win.ws_col) break;

@@ -10,5 +10,6 @@ v addressing before comma moves head only
 v edit file from command line
 v save command
 v prompt on unsaved exit
-- visual range borders
+v visual range borders
+- wrap line
 - split when not fit on screen
