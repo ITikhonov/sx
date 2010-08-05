@@ -195,7 +195,7 @@ go:;
 	if(dir>=0) {
 		r=regexsearch(atext.e,texte,pat,e);
 	} else {
-		r=regexsearch(atext.s,text,pat,e);
+		r=regexsearch(atext.s-1,text,pat,e);
 	}
 	atext.s=r.s;
 	atext.e=r.e;
@@ -359,6 +359,10 @@ void save() {
 }
 
 
+void paste() {
+
+}
+
 void quit() {
 	if(!changed) {
 		resetterm();
@@ -385,6 +389,7 @@ void cmd() {
 	case 'd': delete(); break;
 	case 'w': save(); break;
 	case 0: break;
+	case 'p': paste(); break;
 	default:input++;
 	}
 }
