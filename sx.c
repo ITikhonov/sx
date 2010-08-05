@@ -148,17 +148,24 @@ char errbuf[1024];
 struct range { uint8_t *s,*e; };
 
 struct range atext;
+struct re_pattern_buffer regp;
 
 struct range regexsearch(uint8_t *s, uint8_t *e, uint8_t *p, uint8_t *pe) {
 	struct re_pattern_buffer reg;
-	memset(&reg,0,sizeof(reg));
-
-	const char *errl;
-	if((errl=re_compile_pattern((char*)p,pe-p, &reg))) {
-		err=errl;
-		struct range ret={s,s};
-		return ret;
+	if(pe-p) {
+		memset(&reg,0,sizeof(reg));
+		const char *errl;
+		if((errl=re_compile_pattern((char*)p,pe-p, &reg))) {
+			err=errl;
+			struct range ret={s,s};
+			return ret;
+		}
+		regp=reg;
+	} else {
+		reg=regp;
 	}
+
+
 
 	struct re_registers mreg;
 	int r=re_search(&reg, (char*)text,texte-text, s-text,e-s, &mreg);
