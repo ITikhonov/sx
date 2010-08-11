@@ -449,6 +449,8 @@ void cmd() {
 	if(!bindend) texts=atext.s;
 	textd=atext.e;
 
+	if(textd<texts) { uint8_t *a=texts; texts=textd; textd=a; }
+
 	switch(*input) {
 	case 'q': quit(); break;
 	case 'Q': changed=0; quit(); break;
