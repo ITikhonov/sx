@@ -90,49 +90,96 @@ void pos(int x,int y) {
 void eraseline() { printf(CSI "K"); fflush(stdout); }
 void clear() { printf(CSI "J"); fflush(stdout); }
 
-void color(uint8_t *p) {
-	if(p>=texts && p<textd) { printf("%s",CSI"7m"); }
-	else { printf("%s",CSI"m"); }
+uint8_t color(uint8_t *p) {
+	if(p>=texts && p<textd) { return 7; }
+	else { return 0xff; }
+}
+
+void setcolor(uint8_t c) {
+	printf("%s",CSI"m");
+	if(c!=0xff) printf(CSI"%hhum",c);
+}
+
+uint8_t *rewindline(uint8_t *p) {
+	for(;p>=text && *p!='\n';) p--;
+	return p+1;
+}
+
+int physlines(int n) {
+	if(n<win.ws_col) return 1;
+	if(n<2*win.ws_col-3) return 2;
+	return (n-(win.ws_col-3))/(win.ws_col-6)+2;
+}
+
+
+int draw_col, draw_row;
+
+
+uint8_t *rewindview() {
+	uint8_t *p=texts;
+	int n=0;
+	int br=0;
+
+	for(;;) {
+		uint8_t *s=rewindline(p);
+		int l=physlines(p-s);
+		n+=l;
+
+		if(n>win.ws_row/2) {
+			int m=n-win.ws_row/2;
+			p=s+win.ws_col-3 + (win.ws_col-6)*(m-1);
+			br=1;
+			break;
+		}
+
+		if(n==win.ws_row/2) { p=s; break; }
+		if(s==text) { p=text; break; }
+		p=s-2;
+	}
+	if(br) { printf("%s...",CSI"1m"); }
+	return p;
+}
+
+int drawchar(uint8_t c, uint8_t cl) {
+	if(c=='\n') {
+		draw_row++; 
+		if(draw_row==win.ws_row-2) return 1;
+		draw_col=0; printf("\r\n"); eraseline();
+		return 0;
+	}
+
+	if(draw_col>=win.ws_col-3) {
+		printf("%s...",CSI"1m");
+		printf("\r\n"); eraseline();
+		printf("%s...",CSI"1m");
+		draw_row++;
+		draw_col=3;;
+	}
+	setcolor(cl);
+	putchar(c);
+	draw_col++;
+	return 0;
 }
 
 void drawtext() {
-	pos(1,1);
-	int r=0;
-	uint8_t *p=textw;
-	for(;r<win.ws_row-2;r++) {
-		eraseline();
-		int c=0;
-		for(;p<texte;) {
-			if(*p=='\t') {c+=8;} else {c++;}
+	pos(1,1); draw_col=draw_row=0; eraseline();
 
-			if(p==texts) { printf("%s>",CSI"1m"); c++; }
-			if(c>=win.ws_col-3) { printf("%s...\r\n...",CSI"1m"); eraseline(); c=0; r++; continue; }
+	uint8_t *p=rewindview();
 
-			if(p==textd) { printf("%s<",CSI"m"CSI"1m"); c++; }
-			if(c>=win.ws_col) break;
-
-			if(*p=='\n') { break; }
-
-			color(p);
-			if(*p=='\t') {
-				int t=c%8; if(!t)t=8;
-				while(t--) putchar(' '); p++;
-			} else {
-				putchar(*p++);
-			}
-		}
-		if(p==texte) goto end;
-		while(*p!='\n') {
+	for(;p<texte;) {
+		uint8_t cl=color(p);
+		if(p==texts) { drawchar('>',1); }
+		if(p==textd) { drawchar('<',1); }
+		if(*p=='\t') {
 			p++;
-			if(p==texte) goto end;
+			drawchar(' ',cl); drawchar(' ',cl); drawchar(' ',cl); drawchar(' ',cl);
+			drawchar(' ',cl); drawchar(' ',cl); drawchar(' ',cl); drawchar(' ',cl);
+			continue;
 		}
-		p++;
-		putchar('\r');
-		putchar('\n');
-		if(p==texte) goto end;
+		if(drawchar(*p++, cl)) break;
+		
 	}
 
-end:	
 	clear();
 	fflush(stdout);
 }
@@ -416,7 +463,6 @@ void cmd() {
 	}
 }
 
-
 void interpret() {
 	show=1;
 	*input=0;
@@ -478,10 +524,10 @@ int main(int argc, char *argv[]) {
 	for(;;) {
 		drawtext();
 		pos(win.ws_row-1,1);
-		printf("%lu(%02x):%lu %s",texts-text,*texts,textd-text,err); fflush(stdout);
+		eraseline(); printf("%lu(%02x):%lu %s",texts-text,*texts,textd-text,err); fflush(stdout);
 
 		pos(win.ws_row,1);
-		printf("%.*s",(int)(input-inputbuf),inputbuf); fflush(stdout);
+		eraseline(); printf("%.*s",(int)(input-inputbuf),inputbuf); fflush(stdout);
 
 		int r=read(0,&c,1);
 		if(r==-1) {
