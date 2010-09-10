@@ -13,4 +13,5 @@ v prompt on unsaved exit
 v visual range borders
 v wrap line
 v paste
-- split when not fit on screen
+- showing text to be appended in view
+- do not die on empty file

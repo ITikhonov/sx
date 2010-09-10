@@ -161,15 +161,20 @@ int drawchar(uint8_t c, uint8_t cl) {
 	return 0;
 }
 
-void drawtext() {
-	pos(1,1); draw_col=draw_row=0; eraseline();
+uint8_t inputbuf[1024];
+uint8_t *input=inputbuf;
 
-	uint8_t *p=rewindview();
-
-	for(;p<texte;) {
+void drawtext2(uint8_t *p, uint8_t *e) {
+	for(;p<e;) {
 		uint8_t cl=color(p);
 		if(p==texts) { drawchar('>',1); }
-		if(p==textd) { drawchar('<',1); }
+		if(p==textd) {
+			if(input>inputbuf && (inputbuf[0]=='a' || inputbuf[0]=='A')) {
+				if(inputbuf[0]=='A') drawchar('\n',cl);
+				drawtext2(inputbuf+1,input);
+			}
+			drawchar('<',1);
+		}
 		if(*p=='\t') {
 			p++;
 			drawchar(' ',cl); drawchar(' ',cl); drawchar(' ',cl); drawchar(' ',cl);
@@ -179,13 +184,17 @@ void drawtext() {
 		if(drawchar(*p++, cl)) break;
 		
 	}
+}
+
+void drawtext() {
+	pos(1,1); draw_col=draw_row=0; eraseline();
+	uint8_t *p=rewindview();
+
+	drawtext2(p,texte);
 
 	clear();
 	fflush(stdout);
 }
-
-uint8_t inputbuf[1024];
-uint8_t *input=inputbuf;
 
 int dir=0;
 int bindend=0;
