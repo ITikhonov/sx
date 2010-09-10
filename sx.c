@@ -71,10 +71,12 @@ void makeswap(char *f) {
 	close(swap);
 }
 
+uint8_t empty;
+
 void openfile() {
 	filefd=open(swapname,O_RDWR);
 	struct stat st;
-	fstat(filefd,&st);
+	if(fstat(filefd,&st)==-1 || st.st_size==0) { textd=textw=text=texts=texte=&empty; return; }
 	texts=textd=textw=text=mmap(0,st.st_size,PROT_READ|PROT_WRITE,MAP_PRIVATE,filefd,0);
 	texte=text+st.st_size;
 }
